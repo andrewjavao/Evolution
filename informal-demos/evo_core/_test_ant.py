@@ -1,16 +1,29 @@
+#command line argument:
+# first : int, run so many steps then start to render
+# second : time for every step
+
 import time
+import os
+import sys
 from core import procgrid
+
+loopTimes = 0
+pause_time = 0.16
+
+if len(sys.argv) > 1:
+    loopTimes = int(sys.argv[1])
+
+if len(sys.argv) > 2:
+    pause_time = float(sys.argv[2])
 
 grid = procgrid.ProcessGrid()
 
 grid.setCellAt(0, 0, 1)
-grid.setCellAt(10, 10, 1)
-grid.setCellAt(5, 15, 1)
-grid.setCellAt(1, 2, 1)
-grid.setCellAt(-5, -8, 1)
-grid.setCellAt(-10, -3, 1)
-
-loopTimes = 100
+#grid.setCellAt(10, 10, 1)
+#grid.setCellAt(5, 15, 1)
+#grid.setCellAt(1, 2, 1)
+#grid.setCellAt(-5, -8, 1)
+#grid.setCellAt(-10, -3, 1)
 
 ant = [0, 0, 1] #1:(-1, 0), 2:(0, 1), 3:(1, 0), 4:(0, -1)
 previous_ant = [0, 0, 1]
@@ -80,6 +93,7 @@ def antStep(grid):
 
     else: # 1, 0
         # black to white, avoid turning to black cell, and prefer to turn left, and set the cell after it black
+        '''
         left_dir = ant_dir[turn_left(ant[2])]
         right_dir = ant_dir[turn_right(ant[2])]
 
@@ -96,6 +110,8 @@ def antStep(grid):
         new_dir = ant_dir[ant[2]]
         grid.setCellAt(ant[0] - new_dir[0], ant[1] - new_dir[1], 1)
         current_cell.value = 0
+        '''
+        pass
 
 
 startTime = time.time()
@@ -106,7 +122,7 @@ while True:
 
     antStep(grid)
 
-    if step > 500:
+    if step > loopTimes:
         msg = "=" * (grid.width() + 2) * 2 + "\n"
 
         for i in range(grid.minI, grid.maxI + 1):
@@ -130,7 +146,8 @@ while True:
             msg += line + "\n"
 
         print(msg)
-        time.sleep(0.28)
+        time.sleep(pause_time)
+        os.system("clear")
         #input()
 
 print("Time used :", time.time() - startTime)
