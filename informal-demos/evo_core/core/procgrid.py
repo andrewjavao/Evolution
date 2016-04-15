@@ -14,6 +14,7 @@ class ProcessGrid(object):
     minJ = None
     maxI = None
     maxJ = None
+    bounded = False
 
     def __init__(self):
         pass
@@ -27,15 +28,21 @@ class ProcessGrid(object):
 
         return self.data[i][j]
 
-    def setCellAt(self, i, j, value):
+    def setCellAt(self, i, j, value, imm=True):
         # type: (int, int, object) -> GridCell
+        if self.bounded:
+            if i < self.minI or i > self.maxI or j < self.minJ or j > self.maxJ:
+                return None
+
         if i not in self.data:
             self.data[i] = {}
-            self.data[i][j] = GridCell(value, self, i, j)
+            self.data[i][j] = GridCell(None, self, i, j)
+            self.data[i][j].setValue(value, imm)    #TODO performance
         elif j not in self.data[i]:
-            self.data[i][j] = GridCell(value, self, i, j)
+            self.data[i][j] = GridCell(None, self, i, j)
+            self.data[i][j].setValue(value, imm)    #TODO performance
         else:
-            self.data[i][j].value = value
+            self.data[i][j].setValue(value, imm)
 
         if self.minI is None or (self.minI > i):
             self.minI = i
@@ -46,7 +53,7 @@ class ProcessGrid(object):
         if self.maxJ is None or (self.maxJ < j):
             self.maxJ = j
 
-        return self.data[i][j]
+        return self.data[i][j]    #TODO performance
 
     def traversal(self, on_cell, on_complete=None):
         if on_cell is not None:
@@ -84,6 +91,24 @@ class ProcessGrid(object):
         if on_complete is not None:
             on_complete()
 
+    def traversalAreaThenUpdate(self, i, j, w, h, on_cell, on_complete=None):
+        if on_cell is not None:
+            for x in range(i, i+h):
+                for y in range(j, j+w):
+                    c = self.getCellAt(x, y)
+                    if c is None:
+                        on_cell(None, x, y)
+                        c = self.getCellAt(x, y)
+                    else:
+                        on_cell(c)
+
+        for x in self.data:
+            for y in self.data[x]:
+                self.data[x][y].update()
+
+        if on_complete is not None:
+            on_complete()
+
     def width(self):
         if self.maxJ is None:
             return 0
@@ -112,6 +137,7 @@ class GridCell(object):
         self.j = j
 
     def getCellAwayFrom(self, offsetI, offsetJ):
+        # type (int, int) -> GridCell
         cell = self.grid.getCellAt(self.i + offsetI, self.j + offsetJ)
         if cell is None:
             cell = self.grid.setCellAt(self.i + offsetI, self.j + offsetJ, None)
@@ -123,11 +149,11 @@ class GridCell(object):
 
     def setValue(self, next_value, imm=True):
         if imm:
-            self.dirty = True
-            self.nextValue = next_value
-        else:
             self.dirty = False
             self.value = next_value
+        else:
+            self.dirty = True
+            self.nextValue = next_value
 
     def update(self):
         if self.dirty:
